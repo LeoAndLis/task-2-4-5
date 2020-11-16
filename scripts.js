@@ -14,13 +14,13 @@ const debounce = (fn, debounceTime) => {
 function addLiToListHandler(name, owner, stars) {
     const fragment = document.createRange().createContextualFragment(
         `<li class="rep-list__item">
-                    <ul class="rep-data-list">
-                        <li class="rep-data-list__item">Name: ${name}</li>
-                        <li class="rep-data-list__item">Owner: ${owner}</li>
-                        <li class="rep-data-list__item">Stars: ${stars}</li>
-                    </ul>
-                    <button class="rep-list__delete-item" onclick="deleteRepItemHandler(this)"></button>
-                </li>`
+            <ul class="rep-data-list">
+                <li class="rep-data-list__item">Name: ${name}</li>
+                <li class="rep-data-list__item">Owner: ${owner}</li>
+                <li class="rep-data-list__item">Stars: ${stars}</li>
+            </ul>
+            <button class="rep-list__delete-item" onclick="deleteRepItemHandler(this)"></button>
+        </li>`
     );
 
     repList.appendChild(fragment);
@@ -33,10 +33,12 @@ function deleteRepItemHandler(el) {
 }
 
 async function getData() {
+    if (this.value === '') {
+        responseList.innerHTML = "";
+        return;
+    }
 
-    responseList.innerHTML = "";
-
-    let resUrl = url + '?q=' + this.value.trim().split('').map(el => el === ' ' ? '+' : el).join('');
+    let resUrl = url + '?q=' + this.value;
 
     const response = await fetch(resUrl);
 
@@ -47,27 +49,24 @@ async function getData() {
 
     let json = await response.json();
     const fragment = document.createDocumentFragment();
-    let i = 0;
 
-    while( i < 5 && json.items[i] ) {
-        let name = json.items[i].name;
-        let owner = json.items[i].owner.login;
-        let stars = json.items[i].stargazers_count;
+    for (let i = 0; i < 5; i++) {
+        if ( json.items[i] === undefined ) {
+            break;
+        }
+        const {name, stargazers_count: stars, owner:{login: owner}} = json.items[i];
         const li = document.createElement('li');
         li.classList.add('response-list__item');
         li.innerText = json.items[i].name;
         li.onclick = () => addLiToListHandler(name, owner, stars);
+
         fragment.appendChild(li);
-        i++;
     }
 
-    if ( i > 0 ) {
-        responseList.appendChild(fragment);
-    }
-
-    return;
+    responseList.innerHTML = "";
+    responseList.appendChild(fragment);
 }
 
 const debouncedRequestHandler = debounce(getData, 500);
 
-input.addEventListener('keydown', debouncedRequestHandler);
+input.addEventListener('input', debouncedRequestHandler);
